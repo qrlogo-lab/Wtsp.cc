@@ -1,0 +1,55 @@
+name: PHP Checker
+
+on: [push, pull_request]
+
+jobs:
+  php-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Скачать код
+        uses: actions/checkout@v3
+      
+      - name: Установить PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          
+      - name: Проверить синтаксис PHP файлов
+        run: |
+          echo "🔍 Проверяем синтаксис PHP файлов..."
+          find . -name "*.php" -type f | while read file; do
+            if php -l "$file" > /dev/null; then
+              echo "✅ $file - OK"
+            else
+              echo "❌ $file - ОШИБКА"
+              php -l "$file"
+              exit 1
+            fi
+          done
+          
+      - name: Проверить безопасность (базовые проверки)
+        run: |
+          echo "🛡️ Проверяем базовые уязвимости..."
+          # Проверяем на наличие опасных функций
+          DANGEROUS_FUNCTIONS=("eval(" "shell_exec(" "system(" "exec(" "passthru(")
+          
+          for func in "${DANGEROUS_FUNCTIONS[@]}"; do
+            echo "🔎 Ищем: $func"
+            if grep -r "$func" . --include="*.php"; then
+              echo "⚠️ ВНИМАНИЕ: Найдена потенциально опасная функция: $func"
+              echo "Это может быть безопасно, но проверьте код."
+            fi
+          done
+          
+      - name: Создать отчет
+        run: |
+          echo "📊 Отчет о проверке PHP:"
+          echo "✅ Синтаксис PHP: Проверено"
+          echo "✅ Базовые проверки безопасности: Выполнены"
+          echo ""
+          echo "🌐 После деплоя сайт будет доступен по ссылке от Render.com"
+          echo "📦 Для деплоя на Render:"
+          echo "1. Зайдите на render.com"
+          echo "2. Подключите этот репозиторий"
+          echo "3. Выберите 'Web Service' → 'PHP'"
