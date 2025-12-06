@@ -1,0 +1,46 @@
+name: Code Checker
+on: [push, pull_request]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Скачать код
+        uses: actions/checkout@v3
+        
+      - name: Проверить HTML на ошибки
+        uses: Cyb3r-Jak3/html5-validator-action@v1
+        with:
+          root: '.'
+          
+      - name: Проверить CSS на ошибки
+        uses: batalex/css-validator-action@v1
+          
+      - name: Проверить JavaScript на ошибки
+        uses: samuelmeuli/linter-action@v1
+        with:
+          eslint: false
+          stylelint: false
+          # Проверяем только на явные синтаксические ошибки
+          run: |
+            if find . -name "*.js" -not -path "./node_modules/*" | grep -q .; then
+              for file in $(find . -name "*.js" -not -path "./node_modules/*"); do
+                if ! node -c "$file"; then
+                  echo "❌ Ошибка в файле: $file"
+                  exit 1
+                fi
+              done
+            else
+              echo "✅ JavaScript файлов нет, пропускаем проверку"
+            fi
+            
+      - name: Создать ссылку для предпросмотра
+        if: github.event_name == 'push'
+        run: |
+          echo "🎉 Проверка завершена!"
+          echo "🌐 Сайт будет доступен по адресу:"
+          echo "https://${{ github.event.repository.name }}.vercel.app"
+          echo ""
+          echo "📊 Статус деплоя можно посмотреть здесь:"
+          echo "https://vercel.com/${{ github.repository_owner }}/${{ github.event.repository.name }}"
